@@ -240,6 +240,23 @@ body { overflow: hidden; }
 .walkpad .act.idle { background: var(--glass); color: var(--glass-ink); opacity: .8; }
 .walkpad .act .k { font-family: var(--mono); font-size: 11px; opacity: .7; display: block; }
 .vp .tag.prompt { background: #E2B957; color: #2A1D0B; font-size: 13px; padding: 3px 10px; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+/* touch controls: joystick bottom left, jump and action bottom right */
+.controls { left: 0; right: 0; bottom: 0; height: 0; pointer-events: none; }
+.controls > * { position: absolute; pointer-events: auto; bottom: 12px; }
+.stick { left: 14px; width: 124px; height: 124px; border-radius: 50%; background: var(--glass); border: 2px solid rgba(255,255,255,.22); touch-action: none; display: grid; place-items: center; cursor: grab; }
+.stick::before { content: ""; position: absolute; inset: 30%; border-radius: 50%; border: 1px dashed rgba(255,255,255,.3); pointer-events: none; }
+.knob { width: 56px; height: 56px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #FFFFFF, #D9D6CB); box-shadow: 0 3px 8px rgba(0,0,0,.4); pointer-events: none; transition: transform .12s ease-out; }
+.stick.on .knob { transition: none; }
+.btns { right: 14px; display: flex; align-items: flex-end; gap: 12px; }
+.cbtn { width: 74px; height: 74px; border-radius: 50%; border: 0; display: grid; align-content: center; justify-items: center; font-weight: 800; touch-action: none; box-shadow: 0 3px 8px rgba(0,0,0,.35); padding: 0; }
+.cbtn span { font-size: 24px; line-height: 1.05; }
+.cbtn small { font-size: 11px; letter-spacing: .02em; }
+.cbtn:active, .cbtn.on { transform: scale(.94); filter: brightness(1.08); }
+.jumpb { background: #8CC0E8; color: #10263A; margin-bottom: 30px; }
+.actb { background: #E2B957; color: #2A1D0B; width: 88px; height: 88px; }
+.actb.idle { background: var(--glass); color: var(--glass-ink); opacity: .85; }
+.ridepad { top: 10px; right: 10px; bottom: auto; }
+.ridepad .pad, .ridepad .jump, .ridepad .dis { display: none !important; }
 .setup .ghostbtn { background: transparent; border: 1px solid var(--line); border-radius: 10px; padding: 10px 16px; font-weight: 700; color: var(--ink); }
 .setup .btnrow { display: flex; gap: 8px; flex-wrap: wrap; }
 .side .hintCard { display: none; }
@@ -275,8 +292,12 @@ body { overflow: hidden; }
   .vp .hint { display: none !important; }
   .side .hintCard { display: block; grid-column: 1 / -1; font-size: 12.5px; line-height: 1.35; padding: 6px 10px; background: var(--glass); color: var(--glass-ink); border-color: transparent; }
   .hand { top: 10px; padding: 5px 8px; font-size: 12px; }
-  .walkpad .pad { grid-template-columns: repeat(3, 42px); grid-template-rows: repeat(2, 42px); }
-  .walkpad .act { min-width: 92px; height: 56px; }
+  .stick { width: 108px; height: 108px; left: 10px; bottom: 10px; }
+  .knob { width: 48px; height: 48px; }
+  .btns { right: 10px; bottom: 10px; gap: 10px; }
+  .cbtn { width: 62px; height: 62px; }
+  .actb { width: 74px; height: 74px; }
+  .jumpb { margin-bottom: 26px; }
 }
 </style>
 
@@ -314,12 +335,12 @@ body { overflow: hidden; }
       <button type="button" class="jump" id="btnJump" data-i18n="ride.jump">Jump</button>
       <button type="button" class="dis" id="dismount" data-i18n="ride.dismount">Dismount</button>
     </div>
-    <div class="ov walkpad" id="walkpad" hidden>
-      <div class="pad glass">
-        <span></span><button type="button" id="wUp" aria-label="Walk up">▲</button><span></span>
-        <button type="button" id="wLeft" aria-label="Walk left">◀</button><button type="button" id="wDown" aria-label="Walk down">▼</button><button type="button" id="wRight" aria-label="Walk right">▶</button>
+    <div class="ov controls" id="controls" hidden>
+      <div class="stick" id="stick" aria-label="Joystick"><div class="knob" id="knob"></div></div>
+      <div class="btns">
+        <button type="button" class="cbtn jumpb" id="jumpBtn"><span aria-hidden="true">⤒</span><small data-i18n="ride.jump">Jump</small></button>
+        <button type="button" class="cbtn actb idle" id="actBtn"><span id="actIco" aria-hidden="true">✋</span><small id="actTxt">Use</small></button>
       </div>
-      <button type="button" class="act idle" id="actBtn"><span id="actTxt">✋</span><span class="k">E</span></button>
     </div>
     <div class="ov tag prompt" id="prompt" hidden></div>
     <div class="ov dialog glass" id="dialog" hidden>
@@ -652,7 +673,8 @@ Object.assign(I18N.en, {
   "hint.stall.manure": "{name}'s stall needs mucking out. The pitchfork leans by the door.",
   "hint.stall.dirty": "{name} is muddy. The brush is on the bench in the tack corner.",
   "hint.stall.night": "It is late. Press E at the light switch to settle the horses for the night.",
-  "hint.stall.idle": "Walk with WASD, the arrow keys or the pad. Stand next to something and press E or ✋ to use it.",
+  "hint.stall.idle": "Walk with the joystick, WASD or the arrow keys. Stand next to something and press ✋ or E to use it.",
+  "hint.ride": "Push the joystick up (or hold W) to go, keep it there for trot and canter. Pull back to back up, push sideways to turn. Jump or Space jumps. Ride through the rings and over the fences.",
   "hint.arena.tack": "To ride, {name} needs a bridle and a saddle from the tack corner.",
   "hint.arena.mount": "Empty your hands, walk up to {name} and press E to mount.",
   "hint.paddock": "Run into the ball to kick it and {name} will chase it.",
@@ -667,7 +689,7 @@ Object.assign(I18N.de, {
   "setup.intro": "In Box eins wartet ein Pferd. Lauf durch den Stall, nimm das Werkzeug und kümmere dich darum: Schlamm abbürsten, Heu und Wasser tragen, ausmisten, satteln und reiten.",
   "setup.addHeading": "Ein neues Pferd", "setup.addIntro": "Box {n} ist frei. Gib deinem neuen Pferd einen Namen und wähle eine Fellfarbe.", "setup.addStart": "Einziehen", "setup.cancel": "Abbrechen",
   "hud.addHorse": "+ Pferd", "stall.free": "FREI", "log.newHorse": "{name} ist in Box {n} eingezogen.", "no.stableFull": "Alle drei Boxen sind belegt.",
-  "tip.board": "Pinnwand · Vorräte und Tierarzt", "tip.emptyStall": "Freie Box · Pferd hinzufügen", "board.title": "Pinnwand", "act.use": "Benutzen",
+  "tip.board": "Pinnwand · Vorräte und Tierarzt", "tip.emptyStall": "Freie Box · Pferd hinzufügen", "board.title": "Pinnwand", "act.use": "Nutzen",
   "no.far": "Geh erst näher heran.",
   "hint.brush": "Stell dich neben {name} und halte E oder ✋ gedrückt, oder zieh die Bürste über den Schlamm.",
   "hint.pick": "Stell dich an jedes Bein von {name} und drück E, um den Huf auszukratzen.",
@@ -686,7 +708,8 @@ Object.assign(I18N.de, {
   "hint.stall.manure": "Die Box von {name} muss ausgemistet werden. Die Mistgabel lehnt an der Tür.",
   "hint.stall.dirty": "{name} ist schlammig. Die Bürste liegt auf der Bank in der Sattelecke.",
   "hint.stall.night": "Es ist spät. Drück E am Lichtschalter, damit die Pferde schlafen können.",
-  "hint.stall.idle": "Lauf mit WASD, den Pfeiltasten oder dem Steuerkreuz. Stell dich neben etwas und drück E oder ✋.",
+  "hint.stall.idle": "Lauf mit dem Joystick, WASD oder den Pfeiltasten. Stell dich neben etwas und drück ✋ oder E.",
+  "hint.ride": "Drück den Joystick nach oben (oder halte W), um loszureiten, halte ihn für Trab und Galopp. Zurückziehen geht rückwärts, zur Seite lenkt. Springen oder Leertaste springt. Reite durch die Ringe und über die Hindernisse.",
   "hint.arena.tack": "Zum Reiten braucht {name} Trense und Sattel aus der Sattelecke.",
   "hint.arena.mount": "Hände frei machen, zu {name} gehen und E drücken zum Aufsteigen.",
   "hint.paddock": "Lauf gegen den Ball, dann jagt {name} ihm nach.",
@@ -1522,7 +1545,7 @@ function roomPose(key) {
       [[b[0], b[4], b[2]], [b[1], b[4], b[2]], [b[0], 0, b[3]], [b[1], 0, b[3]]].forEach(([x, y, z]) => {
         const py = (1 - tmpV.set(x + r.x, y, z).project(tmpCam).y) / 2 * Hh; top = Math.min(top, py); bot = Math.max(bot, py);
       });
-      const wantTop = 52, wantBot = Hh - 120;
+      const wantTop = 52, wantBot = Hh - 140;
       let px = 0;
       if (bot > wantBot) px = Math.min(bot - wantBot, Math.max(0, top - wantTop));
       else if (top < wantTop) px = -Math.min(wantTop - top, Math.max(0, wantBot - bot));
@@ -1938,12 +1961,30 @@ holdBtn("btnRight", () => pad.steer = -1, () => { if (pad.steer === -1) pad.stee
 holdBtn("btnUp", () => pad.up = true, () => pad.up = false);
 holdBtn("btnDown", () => pad.down = true, () => pad.down = false);
 $("btnJump").addEventListener("pointerdown", (e) => { e.preventDefault(); jump(); });
+// on-screen joystick: walks the player, or rides the horse (push up to go, hold it for faster gaits)
 const wpad = { x: 0, z: 0 };
-holdBtn("wUp", () => wpad.z = -1, () => { if (wpad.z === -1) wpad.z = 0; });
-holdBtn("wDown", () => wpad.z = 1, () => { if (wpad.z === 1) wpad.z = 0; });
-holdBtn("wLeft", () => wpad.x = -1, () => { if (wpad.x === -1) wpad.x = 0; });
-holdBtn("wRight", () => wpad.x = 1, () => { if (wpad.x === 1) wpad.x = 0; });
-holdBtn("actBtn", () => { doAction(); actionHeld = true; }, () => { actionHeld = false; });
+const stick = $("stick"), knob = $("knob");
+let stickId = null;
+function setStick(dx, dy) {
+  const dead = Math.hypot(dx, dy) < 0.18;
+  wpad.x = dead ? 0 : dx; wpad.z = dead ? 0 : dy;
+  pad.up = dy < -0.35; pad.down = dy > 0.5 && Math.abs(dx) < 0.6;
+  pad.steer = Math.abs(dx) > 0.25 ? -Math.sign(dx) * Math.min(1, (Math.abs(dx) - 0.25) / 0.5) : 0;
+}
+function stickMove(e) {
+  const r = stick.getBoundingClientRect(), R = r.width / 2;
+  let dx = (e.clientX - r.left - R) / R, dy = (e.clientY - r.top - R) / R;
+  const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
+  knob.style.transform = `translate(${dx * R * 0.55}px, ${dy * R * 0.55}px)`;
+  setStick(dx, dy);
+}
+function stickRelease() { stickId = null; knob.style.transform = ""; stick.classList.remove("on"); setStick(0, 0); }
+stick.addEventListener("pointerdown", (e) => { e.preventDefault(); stickId = e.pointerId; try { stick.setPointerCapture(e.pointerId); } catch (err) {} stick.classList.add("on"); stickMove(e); });
+stick.addEventListener("pointermove", (e) => { if (e.pointerId === stickId) stickMove(e); });
+["pointerup", "pointercancel", "lostpointercapture"].forEach((ev) => stick.addEventListener(ev, (e) => { if (e.pointerId === stickId) stickRelease(); }));
+holdBtn("actBtn", () => { if (state && state.ride) return dismount(); doAction(); actionHeld = true; }, () => { actionHeld = false; });
+holdBtn("jumpBtn", () => { if (!state || state.quiz) return; if (state.ride) jump(); else hop(); }, () => {});
+function hop() { if (!(player.hopT > 0)) player.hopT = 0.45; }
 $("dismount").addEventListener("click", dismount);
 $("putAway").addEventListener("click", () => putAway());
 
@@ -2028,14 +2069,15 @@ function render() {
   $("hand").hidden = !state.hand;
   if (state.hand) { const ht = $("handText"); ht.textContent = t("hand.holding") + ": "; const b = document.createElement("b"); b.textContent = itemName(state.hand); ht.appendChild(b); }
   $("ridepad").hidden = !state.ride;
-  $("walkpad").hidden = !!state.ride;
+  $("controls").hidden = false;
+  if (!!state.ride !== actRide) { actRide = !!state.ride; promptKey = "?"; }
   if (state.ride) renderRide();
   $("pauseTxt").textContent = t(paused ? "hud.resume" : "hud.pause"); $("pauseIco").textContent = paused ? "▶" : "❚❚";
   $("pauseBtn").setAttribute("aria-label", t(paused ? "hud.resume" : "hud.pause"));
   renderHint();
   if (dialogFor) renderDialog();
 }
-let roomsHtml = "", tabsKey = "";
+let roomsHtml = "", tabsKey = "", actRide = false;
 function renderHorseTabs() {
   const key = state.horses.map((h) => h.name).join("|") + state.active + !!state.ride + lang;
   if (key === tabsKey) return;
@@ -2222,8 +2264,9 @@ function updatePlayer(dt) {
   }
   const len = Math.hypot(mx, mz);
   if (len > 0.01) {
+    const pace = Math.min(1, len * 1.25);
     mx /= len; mz /= len;
-    const sp = 3.4 * dt, nx = player.x + mx * sp, nz = player.z + mz * sp;
+    const sp = 3.4 * dt * pace, nx = player.x + mx * sp, nz = player.z + mz * sp;
     if (!blocked(nx, player.z)) player.x = nx;
     if (!blocked(player.x, nz)) player.z = nz;
     const want = Math.atan2(mx, mz);
@@ -2235,7 +2278,9 @@ function updatePlayer(dt) {
       if (Math.hypot(bp.x - player.x, bp.z - player.z) < 0.75 && ballVel.lengthSq() < 9) kickBall(mx, mz);
     }
   }
-  palHolder.position.set(player.x, 0, player.z); palHolder.rotation.y = player.heading;
+  let hy = 0;
+  if (player.hopT > 0) { player.hopT = Math.max(0, player.hopT - dt); hy = Math.sin(Math.PI * (1 - player.hopT / 0.45)) * 0.55; }
+  palHolder.position.set(player.x, hy, player.z); palHolder.rotation.y = player.heading;
   const k = Math.min(1, dt * 12), sw = len > 0.01 ? Math.sin(player.phase) * 0.7 : 0;
   p.legs[0].rotation.x += (sw - p.legs[0].rotation.x) * k; p.legs[1].rotation.x += (-sw - p.legs[1].rotation.x) * k;
   p.arms[0].rotation.x += (-sw * 0.8 - p.arms[0].rotation.x) * k;
@@ -2290,14 +2335,18 @@ function animatePeople(dt) {
   const pr = $("prompt"), ab = $("actBtn");
   if (near) {
     const txt = tipFor(near.tag);
-    if (txt + lang !== promptKey) { promptKey = txt + lang; pr.textContent = (matchMedia("(pointer: coarse)").matches ? "✋ " : "E · ") + txt; $("actTxt").textContent = "✋ " + t("act.use"); }
+    if (txt + lang !== promptKey) { promptKey = txt + lang; pr.textContent = (matchMedia("(pointer: coarse)").matches ? "✋ " : "E · ") + txt; $("actIco").textContent = "✋"; $("actTxt").textContent = t("act.use"); }
     const sc = toScreen(near.point.clone().add(new T.Vector3(0, near.up, 0)));
     pr.hidden = false; ab.classList.remove("idle");
     const hw = pr.offsetWidth / 2 + 6;
     pr.style.left = clamp(sc.x, hw, vp.clientWidth - hw) + "px"; pr.style.top = Math.max(pr.offsetHeight + 6, sc.y) + "px";
   } else {
-    pr.hidden = true; ab.classList.add("idle");
-    if (promptKey) { promptKey = ""; $("actTxt").textContent = "✋"; }
+    pr.hidden = true; ab.classList.toggle("idle", !(state && state.ride));
+    if (promptKey) {
+      promptKey = "";
+      const r = state && state.ride;
+      $("actIco").textContent = r ? "⤓" : "✋"; $("actTxt").textContent = r ? t("ride.dismount") : t("act.use");
+    }
   }
 }
 function updateRide(dt) {
@@ -2448,7 +2497,7 @@ function closeAdd() {
 $("setupCancel").addEventListener("click", closeAdd);
 function openQuiz() {
   for (const k in keys) keys[k] = false;
-  pad.up = false; pad.down = false; pad.steer = 0;
+  stickRelease();
   $("edit").hidden = true; $("tip").hidden = true; closeDialog();
   $("quizSum").textContent = state.quiz.a + " × " + state.quiz.b + " =";
   $("quizInput").value = ""; $("quizMsg").textContent = "";

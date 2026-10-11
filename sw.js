@@ -1,5 +1,5 @@
 // Offline support: always try the network first so updates show up, and fall back to the last copy when offline.
-const CACHE = "ride-free-v6";
+const CACHE = "ride-free-v7";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
