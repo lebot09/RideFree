@@ -14,3 +14,7 @@ The game is available in English and German. Use the EN / DE switch at the top o
 
 - `index.html` is the current version of the game.
 - `v1-2d.html` is the earlier 2D prototype, kept for reference.
+
+## Play on iPhone or iPad
+
+Open https://lebot09.github.io/RideFree/ in Safari, tap the Share button, then "Add to Home Screen". Ride Free then opens full screen from its own icon, and it keeps working offline once it has loaded once.
