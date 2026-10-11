@@ -1,0 +1,1075 @@
+<title>Ride Free</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Corben:wght@400;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: a stable board. The stall scene and care actions sit on the left; the horse's chart (needs, feed room, diary) is pinned on the right. Stacks to one column on phones. */
+:root {
+  --bg: #E5EBE2;
+  --panel: #F6F8F2;
+  --ink: #1E2923;
+  --muted: #56655B;
+  --line: #C6D1C3;
+  --stable: #2E5B48;
+  --stable-ink: #F3F6F0;
+  --brass: #A97A2C;
+  --tack: #7A4A2B;
+  --good: #3A8556;
+  --warn: #B97D12;
+  --bad: #B3402C;
+  --track: #DCE3D8;
+  --display: "Corben", Georgia, "Times New Roman", serif;
+  --body: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111814; --panel: #1A231F; --ink: #E3EAE2; --muted: #9BAA9F; --line: #2D3A34;
+    --stable: #5A9C7E; --stable-ink: #0D1411; --brass: #D6A957; --tack: #C38D63;
+    --good: #5DB47F; --warn: #E2A83E; --bad: #E46D57; --track: #26312C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111814; --panel: #1A231F; --ink: #E3EAE2; --muted: #9BAA9F; --line: #2D3A34;
+  --stable: #5A9C7E; --stable-ink: #0D1411; --brass: #D6A957; --tack: #C38D63;
+  --good: #5DB47F; --warn: #E2A83E; --bad: #E46D57; --track: #26312C;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.app { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 14px 40px; display: grid; gap: 16px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--brass); outline-offset: 2px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; margin: 0; text-wrap: balance; }
+.label { font-size: 11px; text-transform: uppercase; letter-spacing: .09em; font-weight: 800; color: var(--muted); }
+
+/* Header */
+.top { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px; }
+.brand { font-family: var(--display); font-size: 26px; color: var(--stable); letter-spacing: -.01em; margin-right: auto; }
+.hud { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 11px; border-radius: 999px; background: var(--panel); border: 1px solid var(--line); font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.chip .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--brass); }
+.ghost { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 13px; font-weight: 600; }
+.ghost:hover { border-color: var(--stable); }
+.ghost.danger { color: var(--bad); border-color: var(--bad); }
+.lang { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
+.lang button { border: 0; background: transparent; padding: 6px 11px; font-size: 12px; font-weight: 800; letter-spacing: .06em; }
+.lang button[aria-pressed="true"] { background: var(--stable); color: var(--stable-ink); }
+
+/* Setup */
+.setup { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 28px clamp(18px, 4vw, 40px); display: grid; gap: 22px; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+.setup h1 { font-size: clamp(26px, 4vw, 38px); color: var(--stable); }
+.setup p { max-width: 52ch; color: var(--muted); margin: 10px 0 0; }
+.setup form { display: grid; gap: 16px; }
+.setup input[type=text] { width: 100%; font: inherit; font-size: 18px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.coats { display: flex; flex-wrap: wrap; gap: 8px; }
+.coat { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px 7px 8px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-size: 14px; font-weight: 600; }
+.coat i { width: 20px; height: 20px; border-radius: 50%; border: 2px solid rgba(0,0,0,.15); }
+.coat[aria-pressed="true"] { border-color: var(--stable); box-shadow: inset 0 0 0 1px var(--stable); }
+.primary { background: var(--stable); color: var(--stable-ink); border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 800; font-size: 16px; justify-self: start; }
+.primary:hover { filter: brightness(1.08); }
+.setup .preview { width: 100%; border-radius: 12px; overflow: hidden; }
+
+/* Board */
+.board { display: grid; gap: 16px; grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); align-items: start; }
+.stage { display: grid; gap: 14px; min-width: 0; }
+.scene-wrap { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: #6b4a33; }
+.scene-wrap svg { display: block; width: 100%; height: auto; }
+.mood { position: absolute; left: 12px; bottom: 12px; right: 12px; display: flex; justify-content: flex-start; pointer-events: none; }
+.mood span { background: rgba(20, 26, 22, .78); color: #F3F1E8; padding: 7px 12px; border-radius: 10px; font-size: 14px; max-width: 100%; }
+.mood b { font-family: var(--display); font-weight: 700; margin-right: 6px; }
+.toast { position: absolute; top: 12px; left: 50%; transform: translate(-50%, -8px); background: #F6F1DF; color: #3a2a12; border: 1px solid #d9c48d; padding: 8px 14px; border-radius: 10px; font-size: 14px; font-weight: 600; opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; max-width: calc(100% - 24px); text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast.good { background: #E4F2E6; color: #1d4a2b; border-color: #9cc9a6; }
+
+.section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.section-head h2 { font-size: 19px; }
+.actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.act { text-align: left; display: grid; gap: 2px; padding: 10px 12px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); min-height: 62px; transition: border-color .15s, transform .1s; }
+.act:hover:not(:disabled) { border-color: var(--stable); }
+.act:active:not(:disabled) { transform: translateY(1px); }
+.act strong { font-size: 15px; }
+.act small { color: var(--muted); font-size: 12.5px; line-height: 1.3; }
+.act.alert { border-color: var(--bad); }
+.act:disabled { opacity: .45; cursor: not-allowed; }
+.act.ride { background: var(--stable); color: var(--stable-ink); border-color: var(--stable); }
+.act.ride small { color: inherit; opacity: .85; }
+
+/* Ride panel */
+.ride { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 14px; }
+.gaits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.gaits .act { min-height: 70px; }
+.rhythm { position: relative; height: 46px; border-radius: 10px; background: var(--track); overflow: hidden; }
+.zone { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--good) 38%, transparent); border-left: 2px solid var(--good); border-right: 2px solid var(--good); }
+.marker { position: absolute; top: 4px; bottom: 4px; width: 6px; margin-left: -3px; border-radius: 3px; background: var(--tack); }
+.ride-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.strides { display: flex; gap: 5px; }
+.strides i { width: 14px; height: 14px; border-radius: 50%; background: var(--track); border: 1px solid var(--line); }
+.strides i.hit { background: var(--good); border-color: var(--good); }
+.strides i.miss { background: var(--bad); border-color: var(--bad); }
+.aid { font-size: 18px; padding: 14px 34px; }
+.ride-msg { min-height: 1.4em; font-weight: 700; }
+.ride-msg.good { color: var(--good); } .ride-msg.bad { color: var(--bad); }
+
+/* Chart */
+.chart { display: grid; gap: 14px; min-width: 0; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px; min-width: 0; }
+.plate { display: inline-block; font-family: var(--display); font-size: 21px; padding: 3px 14px; border-radius: 6px; background: linear-gradient(180deg, #E6C77E, #B98D3D); color: #3B2A0E; border: 1px solid #8D6A2A; box-shadow: inset 0 1px 0 rgba(255,255,255,.5); }
+.health { display: flex; align-items: center; gap: 10px; margin: 12px 0 14px; }
+.health .bar { flex: 1; }
+.needs { display: grid; gap: 9px; }
+.need { display: grid; grid-template-columns: 92px minmax(0, 1fr) 34px; align-items: center; gap: 10px; font-size: 14px; }
+.need .v { font-family: var(--mono); font-size: 12px; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+.bar { height: 10px; border-radius: 5px; background: var(--track); overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 50%; border-radius: 5px; background: var(--good); transition: width .5s ease; }
+.bar.warn > i { background: var(--warn); }
+.bar.bad > i { background: var(--bad); }
+.need.bad span:first-child { color: var(--bad); font-weight: 700; }
+
+.shop { display: grid; gap: 8px; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 10px; align-items: center; }
+.item .qty { font-family: var(--mono); font-size: 13px; font-variant-numeric: tabular-nums; color: var(--muted); }
+.item .qty b { color: var(--ink); font-size: 15px; }
+.buy { background: transparent; border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+.buy:hover:not(:disabled) { border-color: var(--brass); }
+.buy:disabled { opacity: .45; cursor: not-allowed; }
+
+.diary { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; max-height: 300px; overflow-y: auto; }
+.diary li { display: grid; gap: 1px; font-size: 14px; padding-bottom: 8px; border-bottom: 1px dashed var(--line); }
+.diary li:last-child { border-bottom: 0; }
+.diary time { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.diary li.warn { color: var(--bad); }
+.diary li.gold { color: var(--brass); font-weight: 700; }
+
+/* Horse animation */
+#horse * { transform-box: view-box; }
+#tail { transform-origin: 196px 180px; animation: swish 3.6s ease-in-out infinite; }
+#front { transform-origin: 372px 196px; transition: transform .7s ease; }
+#ears { transform-origin: 430px 92px; transition: transform .4s ease; }
+#eyeOpen { transform-origin: 441px 113px; animation: blink 5s infinite; }
+#eyeShut, #zzz { opacity: 0; }
+#horseBody { transform-origin: 300px 300px; animation: breathe 4s ease-in-out infinite; }
+#horse.eat #front, #horse.drink #front { transform: rotate(52deg); }
+#horse.sleep #front { transform: rotate(14deg); }
+#horse.sleep #eyeOpen { opacity: 0; animation: none; }
+#horse.sleep #eyeShut { opacity: 1; }
+#horse.sleep #zzz { opacity: 1; animation: zz 2.4s ease-in-out infinite; }
+#horse.sad #front { transform: rotate(10deg); }
+#horse.sad #ears { transform: rotate(-28deg); }
+#horse.happy #front { transform: rotate(-6deg); }
+.leg { transform-origin: center top; }
+#horse.walk #horseBody, #horse.trot #horseBody, #horse.canter #horseBody { animation: bob .9s ease-in-out infinite; }
+#horse.trot #horseBody { animation-duration: .55s; }
+#horse.canter #horseBody { animation-duration: .42s; }
+#horse.walk .leg.a, #horse.trot .leg.a, #horse.canter .leg.a { animation: legA .9s ease-in-out infinite; }
+#horse.walk .leg.b, #horse.trot .leg.b, #horse.canter .leg.b { animation: legB .9s ease-in-out infinite; }
+#horse.trot .leg { animation-duration: .55s !important; }
+#horse.canter .leg { animation-duration: .42s !important; }
+#horse.canter #front { transform: rotate(-8deg); }
+#legBL { transform-origin: 218px 222px; } #legBR { transform-origin: 252px 222px; }
+#legFL { transform-origin: 357px 222px; } #legFR { transform-origin: 389px 222px; }
+.heart { animation: rise 1.6s ease-out forwards; }
+.brushfx { animation: brush .5s ease-in-out 3 alternate; transform-box: view-box; transform-origin: 300px 180px; }
+@keyframes swish { 0%, 100% { transform: rotate(0); } 40% { transform: rotate(9deg); } 60% { transform: rotate(-4deg); } }
+@keyframes blink { 0%, 95%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.012); } }
+@keyframes bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+@keyframes legA { 0%, 100% { transform: rotate(16deg); } 50% { transform: rotate(-16deg); } }
+@keyframes legB { 0%, 100% { transform: rotate(-16deg); } 50% { transform: rotate(16deg); } }
+@keyframes zz { 0%, 100% { transform: translateY(0); opacity: .9; } 50% { transform: translateY(-8px); opacity: .5; } }
+@keyframes rise { from { transform: translateY(0); opacity: 1; } to { transform: translateY(-70px); opacity: 0; } }
+@keyframes brush { from { transform: translateX(-40px); } to { transform: translateX(40px); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+@media (max-width: 860px) {
+  .board { grid-template-columns: minmax(0, 1fr); }
+  .setup { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 480px) {
+  .brand { font-size: 22px; width: 100%; }
+  .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .gaits { grid-template-columns: minmax(0, 1fr); }
+  .need { grid-template-columns: 84px minmax(0, 1fr) 30px; }
+  .mood { position: static; padding: 8px; background: #2A1D14; }
+  .mood span { font-size: 13px; background: transparent; padding: 0 4px; }
+  .toast { font-size: 13px; }
+}
+</style>
+
+<div class="app">
+  <header class="top">
+    <div class="brand" data-i18n="appTitle">Ride Free</div>
+    <div class="hud" id="hud" hidden>
+      <span class="chip" id="clock">Day 1 · 07:00</span>
+      <span class="chip"><span class="dot"></span><span id="coins">40</span></span>
+      <button class="ghost" id="pauseBtn" type="button" data-i18n="hud.pause">Pause</button>
+      <button class="ghost" id="resetBtn" type="button" data-i18n="hud.reset">New game</button>
+    </div>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="de" aria-pressed="false">DE</button>
+    </div>
+  </header>
+
+  <section class="setup" id="setup" hidden>
+    <div>
+      <h1 data-i18n="setup.heading">Welcome to the stable</h1>
+      <p data-i18n="setup.intro"></p>
+      <form id="setupForm" style="margin-top:20px">
+        <label class="label" for="nameInput" data-i18n="setup.name">Horse's name</label>
+        <input type="text" id="nameInput" maxlength="16" autocomplete="off" value="Nutmeg">
+        <div class="label" data-i18n="setup.coat">Coat</div>
+        <div class="coats" id="coatPicker"></div>
+        <button class="primary" type="submit" data-i18n="setup.start">Move into the stable</button>
+      </form>
+    </div>
+    <div class="preview" id="previewSlot"></div>
+  </section>
+
+  <main class="board" id="game" hidden>
+    <section class="stage">
+      <div class="scene-wrap" id="sceneWrap">
+        <svg id="scene" viewBox="0 0 600 340" role="img" aria-labelledby="sceneTitle">
+          <title id="sceneTitle">Your horse in the stable</title>
+          <defs>
+            <pattern id="planks" width="600" height="40" patternUnits="userSpaceOnUse">
+              <rect width="600" height="40" fill="#7A5236"/>
+              <rect y="38" width="600" height="2" fill="#5B3B26"/>
+              <rect x="120" width="2" height="40" fill="#5B3B26"/>
+              <rect x="410" width="2" height="40" fill="#5B3B26"/>
+            </pattern>
+            <pattern id="planks2" width="600" height="40" patternUnits="userSpaceOnUse" patternTransform="translate(180 20)">
+              <rect width="600" height="40" fill="none"/>
+              <rect x="260" width="2" height="40" fill="#5B3B26"/>
+            </pattern>
+          </defs>
+
+          <!-- STALL -->
+          <g id="locStall">
+            <rect width="600" height="340" fill="url(#planks)"/>
+            <rect width="600" height="340" fill="url(#planks2)"/>
+            <g id="window">
+              <rect x="468" y="34" width="96" height="74" rx="4" fill="#4A3020"/>
+              <rect id="sky" x="474" y="40" width="84" height="62" fill="#9FD0EA"/>
+              <circle id="sun" cx="535" cy="60" r="10" fill="#FFE27A"/>
+              <circle id="moon" cx="535" cy="58" r="9" fill="#F2F0DC" opacity="0"/>
+              <rect x="514" y="40" width="4" height="62" fill="#4A3020"/>
+              <rect x="474" y="69" width="84" height="4" fill="#4A3020"/>
+            </g>
+            <g id="nameplate">
+              <rect x="40" y="38" width="150" height="34" rx="4" fill="#C79E4B" stroke="#7E5D22" stroke-width="2"/>
+              <circle cx="50" cy="55" r="2.5" fill="#7E5D22"/><circle cx="180" cy="55" r="2.5" fill="#7E5D22"/>
+              <text id="plateText" x="115" y="62" text-anchor="middle" font-family="Corben, Georgia, serif" font-weight="700" font-size="19" fill="#3B2A0E">NUTMEG</text>
+            </g>
+            <!-- hay net -->
+            <g>
+              <path d="M58 118 L118 118 L104 178 L72 178 Z" fill="#3E2A1C" opacity=".35"/>
+              <path id="hayFill" d="M62 122 L114 122 L102 174 L74 174 Z" fill="#D9B45A"/>
+              <path d="M58 118 L118 118 L104 178 L72 178 Z M70 118 L80 178 M86 118 L88 178 M102 118 L96 178 M62 136 L114 136 M65 152 L110 152" fill="none" stroke="#5B3B26" stroke-width="2"/>
+            </g>
+            <rect y="262" width="600" height="78" fill="#C9A24A" id="straw"/>
+            <g fill="#E2C06A" opacity=".8">
+              <rect x="30" y="275" width="40" height="3" rx="1.5" transform="rotate(-8 50 276)"/>
+              <rect x="140" y="300" width="46" height="3" rx="1.5" transform="rotate(12 163 301)"/>
+              <rect x="420" y="285" width="38" height="3" rx="1.5" transform="rotate(-15 439 286)"/>
+              <rect x="520" y="315" width="50" height="3" rx="1.5" transform="rotate(6 545 316)"/>
+              <rect x="260" y="322" width="44" height="3" rx="1.5" transform="rotate(-4 282 323)"/>
+            </g>
+            <g id="dirt" fill="#5E4A2E">
+              <ellipse cx="110" cy="300" rx="16" ry="7"/><ellipse cx="124" cy="296" rx="10" ry="5"/>
+              <ellipse cx="470" cy="318" rx="15" ry="6"/><rect x="0" y="262" width="600" height="78" fill="#6E5A35" opacity=".35"/>
+            </g>
+            <!-- bucket -->
+            <g>
+              <path d="M500 238 L556 238 L550 296 L506 296 Z" fill="#3E6E8E"/>
+              <clipPath id="bucketClip"><path d="M503 241 L553 241 L548 293 L508 293 Z"/></clipPath>
+              <rect id="water" x="500" y="241" width="56" height="52" fill="#8FD1F0" clip-path="url(#bucketClip)"/>
+              <ellipse cx="528" cy="238" rx="28" ry="5" fill="none" stroke="#2C5470" stroke-width="3"/>
+            </g>
+          </g>
+
+          <!-- PADDOCK -->
+          <g id="locPaddock" hidden>
+            <rect width="600" height="340" fill="#A9D8EE"/>
+            <circle cx="90" cy="60" r="22" fill="#FFE27A"/>
+            <path d="M0 200 Q120 140 260 190 T600 170 L600 340 L0 340 Z" fill="#7DB36A"/>
+            <path d="M0 240 Q200 205 380 235 T600 225 L600 340 L0 340 Z" fill="#5E9C51"/>
+            <g fill="#F2EBDD">
+              <rect x="0" y="230" width="600" height="7"/><rect x="0" y="255" width="600" height="7"/>
+              <rect x="30" y="220" width="9" height="62"/><rect x="190" y="220" width="9" height="62"/><rect x="350" y="220" width="9" height="62"/><rect x="510" y="220" width="9" height="62"/>
+            </g>
+            <ellipse id="ball" cx="520" cy="296" rx="16" ry="16" fill="#D94F3A" hidden/>
+          </g>
+
+          <!-- ARENA -->
+          <g id="locArena" hidden>
+            <rect width="600" height="340" fill="#BFD8E6"/>
+            <rect y="0" width="600" height="190" fill="#DCE7EE"/>
+            <rect y="190" width="600" height="150" fill="#D9C29A"/>
+            <rect y="186" width="600" height="8" fill="#FFFFFF"/>
+            <g font-family="Corben, Georgia, serif" font-weight="700" font-size="20" fill="#2E3B35" text-anchor="middle">
+              <rect x="60" y="150" width="34" height="34" fill="#FFFFFF" stroke="#9AA8A0"/><text x="77" y="175">K</text>
+              <rect x="283" y="150" width="34" height="34" fill="#FFFFFF" stroke="#9AA8A0"/><text x="300" y="175">E</text>
+              <rect x="506" y="150" width="34" height="34" fill="#FFFFFF" stroke="#9AA8A0"/><text x="523" y="175">H</text>
+            </g>
+            <g fill="#C7AE82"><ellipse cx="120" cy="300" rx="40" ry="4"/><ellipse cx="420" cy="320" rx="60" ry="4"/></g>
+          </g>
+
+          <!-- HORSE -->
+          <g id="horse" style="--coat:#8B4A2B; --mane:#2A1A12; --points:#2A1A12">
+            <ellipse cx="300" cy="303" rx="150" ry="10" fill="#000" opacity=".18"/>
+            <g id="horseBody">
+              <g id="tail"><path d="M196 172 C164 186 150 238 166 290 C176 262 184 226 206 192 Z" fill="var(--mane)"/></g>
+              <g class="leg a" id="legBR"><rect x="241" y="214" width="22" height="80" rx="9" fill="var(--coat)"/><rect x="241" y="214" width="22" height="80" rx="9" fill="#000" opacity=".22"/><rect x="243" y="262" width="18" height="30" fill="var(--points)"/><rect x="240" y="288" width="24" height="12" rx="3" fill="#3A2F2A"/></g>
+              <g class="leg b" id="legFR"><rect x="378" y="214" width="22" height="80" rx="9" fill="var(--coat)"/><rect x="378" y="214" width="22" height="80" rx="9" fill="#000" opacity=".22"/><rect x="380" y="262" width="18" height="30" fill="var(--points)"/><rect x="377" y="288" width="24" height="12" rx="3" fill="#3A2F2A"/></g>
+              <g fill="var(--coat)">
+                <circle cx="222" cy="194" r="46"/>
+                <ellipse cx="294" cy="202" rx="104" ry="50"/>
+                <circle cx="362" cy="200" r="44"/>
+              </g>
+              <g id="grime" fill="#5A4026" opacity="0">
+                <ellipse cx="250" cy="225" rx="18" ry="9"/><ellipse cx="330" cy="235" rx="22" ry="8"/><ellipse cx="205" cy="185" rx="10" ry="12"/><ellipse cx="300" cy="175" rx="12" ry="6"/>
+              </g>
+              <g class="leg b" id="legBL"><rect x="207" y="216" width="23" height="80" rx="9" fill="var(--coat)"/><rect x="209" y="264" width="19" height="30" fill="var(--points)"/><rect x="206" y="288" width="25" height="12" rx="3" fill="#3A2F2A"/></g>
+              <g class="leg a" id="legFL"><rect x="346" y="216" width="23" height="80" rx="9" fill="var(--coat)"/><rect x="348" y="264" width="19" height="30" fill="var(--points)"/><rect x="345" y="288" width="25" height="12" rx="3" fill="#3A2F2A"/></g>
+              <g id="front">
+                <path d="M334 196 C344 154 372 116 400 90 L436 110 C418 140 408 176 404 214 Z" fill="var(--coat)"/>
+                <path d="M398 86 C376 108 356 140 340 180 L352 186 C366 150 386 118 410 96 Z" fill="var(--mane)"/>
+                <g id="head">
+                  <circle cx="433" cy="112" r="21" fill="var(--coat)"/>
+                  <ellipse cx="454" cy="130" rx="40" ry="18" transform="rotate(38 454 130)" fill="var(--coat)"/>
+                  <ellipse id="blaze" cx="458" cy="132" rx="30" ry="3.5" transform="rotate(38 454 130)" fill="#F4EFE6"/>
+                  <ellipse cx="477" cy="151" rx="13" ry="11" transform="rotate(38 477 151)" fill="#000" opacity=".22"/>
+                  <ellipse cx="481" cy="151" rx="2.5" ry="4" transform="rotate(38 481 151)" fill="#1A1210"/>
+                  <path d="M467 160 Q472 164 478 162" stroke="#1A1210" stroke-width="1.6" fill="none" opacity=".6"/>
+                  <g id="eyeOpen"><circle cx="441" cy="113" r="4.2" fill="#1A1210"/><circle cx="442.4" cy="111.6" r="1.3" fill="#fff"/></g>
+                  <path id="eyeShut" d="M436.5 114 Q441 117 445.5 114" stroke="#1A1210" stroke-width="2" fill="none" stroke-linecap="round"/>
+                  <g id="ears">
+                    <path d="M417 96 L421 70 L431 92 Z" fill="var(--coat)"/>
+                    <path d="M427 94 L435 70 L441 96 Z" fill="var(--coat)"/>
+                    <path d="M430 92 L435 76 L438 93 Z" fill="#000" opacity=".25"/>
+                  </g>
+                  <path d="M424 92 C432 96 440 100 446 106 C440 98 434 94 428 90 Z" fill="var(--mane)"/>
+                </g>
+              </g>
+              <g id="zzz" font-family="Corben, Georgia, serif" font-weight="700" fill="#F5F1E3"><text x="470" y="80" font-size="20">z</text><text x="486" y="62" font-size="15">z</text><text x="498" y="48" font-size="11">z</text></g>
+            </g>
+          </g>
+          <g id="fx"></g>
+          <rect id="night" width="600" height="340" fill="#0B1530" opacity="0" pointer-events="none"/>
+        </svg>
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        <div class="mood"><span id="mood"></span></div>
+      </div>
+
+      <div id="careBlock">
+        <div class="section-head"><h2 data-i18n="actions.heading">Care</h2><span class="label" id="locLabel"></span></div>
+        <div class="actions" id="actions"></div>
+      </div>
+
+      <div class="ride" id="ridePanel" hidden>
+        <div id="gaitChoice">
+          <div class="section-head"><h2 data-i18n="ride.heading">Choose a gait</h2><button class="ghost" type="button" id="rideCancel1" data-i18n="ride.cancel">Dismount</button></div>
+          <div class="gaits" id="gaits"></div>
+        </div>
+        <div id="rideRun" hidden>
+          <div class="section-head"><h2 id="rideTitle">Trot</h2><span class="label" id="rideCount"></span></div>
+          <p style="margin:0 0 4px;color:var(--muted)" data-i18n="ride.hint"></p>
+          <div class="rhythm"><div class="zone" id="zone"></div><div class="marker" id="marker"></div></div>
+          <div class="ride-row">
+            <div class="strides" id="strides"></div>
+            <span class="ride-msg" id="rideMsg"></span>
+          </div>
+          <div class="ride-row">
+            <button class="primary aid" type="button" id="aidBtn" data-i18n="ride.aid">Aid</button>
+            <button class="ghost" type="button" id="rideCancel2" data-i18n="ride.cancel">Dismount</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="chart">
+      <div class="card">
+        <div class="section-head" style="margin-bottom:0"><span class="plate" id="namePlate">Nutmeg</span><span class="label" id="coatLabel"></span></div>
+        <div class="health"><span class="label" data-i18n="health">Health</span><div class="bar" id="healthBar"><i></i></div><span class="chip" id="healthVal" style="padding:3px 8px">100</span></div>
+        <div class="needs" id="needs"></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2 data-i18n="shop.heading">Feed room</h2></div>
+        <div class="shop" id="shop"></div>
+      </div>
+      <div class="card">
+        <div class="section-head"><h2 data-i18n="diary.heading">Stable diary</h2></div>
+        <ul class="diary" id="diary"></ul>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<script>
+(() => {
+const I18N = {
+  en: {
+    appTitle: "Ride Free",
+    "setup.heading": "Welcome to the stable",
+    "setup.intro": "A horse is waiting in stall one. Give them a name and they are yours to look after: food, water, grooming, a clean stall, exercise, riding, play and plenty of affection.",
+    "setup.name": "Horse's name",
+    "setup.coat": "Coat",
+    "setup.start": "Move into the stable",
+    "coat.bay": "Bay", "coat.chestnut": "Chestnut", "coat.grey": "Grey", "coat.black": "Black", "coat.palomino": "Palomino",
+    "hud.day": "Day {n}",
+    "hud.pause": "Pause", "hud.resume": "Resume",
+    "hud.reset": "New game", "hud.confirm": "Tap again to start over",
+    "loc.stall": "In the stall", "loc.paddock": "In the paddock", "loc.arena": "In the arena",
+    "need.food": "Food", "need.water": "Water", "need.energy": "Energy", "need.hygiene": "Grooming",
+    "need.stall": "Stall", "need.fun": "Fun", "need.fitness": "Exercise", "need.bond": "Bond",
+    health: "Health",
+    "actions.heading": "Care",
+    "act.hay": "Feed hay", "act.hay.d": "−1 hay · food +30",
+    "act.oats": "Feed oats", "act.oats.d": "−1 oats · food +20, energy +15",
+    "act.carrot": "Give a carrot", "act.carrot.d": "−1 carrot · bond +8",
+    "act.water": "Fill the bucket", "act.water.d": "Fresh water",
+    "act.groom": "Groom", "act.groom.d": "Brush, pick hooves · 30 min",
+    "act.muck": "Muck out", "act.muck.d": "−1 bedding · fresh straw",
+    "act.paddock": "Turn out", "act.paddock.d": "2 hours in the paddock",
+    "act.ride": "Ride", "act.ride.d": "Train in the arena, earn coins",
+    "act.play": "Play", "act.play.d": "Ball games · fun +30",
+    "act.cuddle": "Cuddle", "act.cuddle.d": "Scratch the withers · bond +10",
+    "act.sleep": "Settle for the night", "act.sleep.d": "Sleep until 06:00",
+    "act.vet": "Call the vet", "act.vet.d": "25 coins · health +40",
+    "shop.heading": "Feed room", "shop.buy": "Buy · {n}",
+    "item.hay": "Hay", "item.oats": "Oats", "item.carrot": "Carrots", "item.shavings": "Bedding",
+    "diary.heading": "Stable diary",
+    "ride.heading": "Choose a gait",
+    "gait.walk": "Walk", "gait.trot": "Trot", "gait.canter": "Canter",
+    "gait.walk.d": "Easy rhythm · small reward", "gait.trot.d": "Steady rhythm · good reward", "gait.canter.d": "Fast and tight · big reward",
+    "ride.hint": "Press Aid when the marker is inside the green zone. The space bar works too.",
+    "ride.aid": "Aid", "ride.count": "Stride {n} of {total}", "ride.cancel": "Dismount",
+    "ride.good": "Lovely stride!", "ride.miss": "Out of rhythm",
+    "no.item": "No {item} left. Buy more in the feed room.",
+    "no.full": "{name} is full and only sniffs at it.",
+    "no.waterFull": "The bucket is already full.",
+    "no.clean": "{name} is already spotless.",
+    "no.stallClean": "The stall is already clean.",
+    "no.tired": "{name} is too tired. Let them rest or feed some oats.",
+    "no.sick": "{name} is not well enough. Call the vet first.",
+    "no.night": "It is dark outside. Wait until morning.",
+    "no.cuddled": "{name} just had lots of affection. Try again a little later.",
+    "no.notNight": "Too early for bed. Settle {name} after 20:00.",
+    "no.coins": "Not enough coins.",
+    "no.vetHealthy": "{name} is healthy. No vet needed.",
+    "log.welcome": "{name} moved into stall one.",
+    "log.hay": "{name} munches the hay.",
+    "log.oats": "{name} gobbles up the oats.",
+    "log.carrot": "{name} crunches the carrot and nuzzles your pocket for more.",
+    "log.water": "{name} drinks deeply from the fresh bucket.",
+    "log.groom": "{name}'s coat shines after a good brush.",
+    "log.muck": "Fresh straw in the stall. {name} rolls in it straight away.",
+    "log.paddock": "{name} spent two hours grazing and galloping in the paddock.",
+    "log.play": "{name} chased the ball all over the paddock.",
+    "log.cuddle": "{name} leans into the scratches and sighs happily.",
+    "log.sleep": "You settled {name} for the night.",
+    "log.morning": "Day {day} begins. Care rating {stars} of 5, earned {coins} coins.",
+    "log.ride": "{gait}: {hits} of {total} good strides, earned {coins} coins.",
+    "log.rideStop": "You dismounted early.",
+    "log.vet": "The vet checked {name} and left some medicine.",
+    "log.buy": "Bought {item}.",
+    "log.away": "While you were away, {h} hours passed at the stable.",
+    "warn.food": "{name} is hungry.", "warn.water": "{name} is thirsty.", "warn.energy": "{name} is exhausted.",
+    "warn.hygiene": "{name}'s coat is muddy and itchy.", "warn.stall": "The stall needs mucking out.",
+    "warn.fun": "{name} is bored.", "warn.fitness": "{name} needs exercise.", "warn.bond": "{name} feels lonely.",
+    "warn.health": "{name} looks unwell. Consider calling the vet.",
+    "mood.food": "nickers at the empty hay net.", "mood.water": "licks at the dry bucket.",
+    "mood.energy": "dozes with one hind leg resting.", "mood.hygiene": "rubs an itchy, muddy shoulder on the door.",
+    "mood.stall": "wrinkles their nose at the dirty straw.", "mood.fun": "paws the ground, looking for something to do.",
+    "mood.fitness": "is restless and full of beans.", "mood.bond": "looks over the door for you.",
+    "mood.sick": "stands quietly with dull eyes.", "mood.sleep": "is asleep, ears twitching.",
+    "mood.ok": "watches you with ears forward.", "mood.great": "is bright eyed and happy to see you.",
+    scene: "{name} in the stable",
+  },
+  de: {
+    appTitle: "Ride Free",
+    "setup.heading": "Willkommen im Stall",
+    "setup.intro": "In Box eins wartet ein Pferd auf dich. Gib ihm einen Namen, und ab jetzt kümmerst du dich darum: Futter, Wasser, Putzen, eine saubere Box, Bewegung, Reiten, Spielen und viel Zuneigung.",
+    "setup.name": "Name des Pferdes",
+    "setup.coat": "Fellfarbe",
+    "setup.start": "In den Stall einziehen",
+    "coat.bay": "Brauner", "coat.chestnut": "Fuchs", "coat.grey": "Schimmel", "coat.black": "Rappe", "coat.palomino": "Palomino",
+    "hud.day": "Tag {n}",
+    "hud.pause": "Pause", "hud.resume": "Weiter",
+    "hud.reset": "Neues Spiel", "hud.confirm": "Nochmal tippen zum Neustart",
+    "loc.stall": "In der Box", "loc.paddock": "Auf der Koppel", "loc.arena": "In der Reithalle",
+    "need.food": "Futter", "need.water": "Wasser", "need.energy": "Energie", "need.hygiene": "Pflege",
+    "need.stall": "Box", "need.fun": "Spaß", "need.fitness": "Bewegung", "need.bond": "Bindung",
+    health: "Gesundheit",
+    "actions.heading": "Versorgen",
+    "act.hay": "Heu füttern", "act.hay.d": "−1 Heu · Futter +30",
+    "act.oats": "Hafer füttern", "act.oats.d": "−1 Hafer · Futter +20, Energie +15",
+    "act.carrot": "Karotte geben", "act.carrot.d": "−1 Karotte · Bindung +8",
+    "act.water": "Eimer füllen", "act.water.d": "Frisches Wasser",
+    "act.groom": "Putzen", "act.groom.d": "Bürsten, Hufe auskratzen · 30 Min.",
+    "act.muck": "Ausmisten", "act.muck.d": "−1 Einstreu · frisches Stroh",
+    "act.paddock": "Auf die Koppel", "act.paddock.d": "2 Stunden auf der Koppel",
+    "act.ride": "Reiten", "act.ride.d": "Training in der Halle, Münzen verdienen",
+    "act.play": "Spielen", "act.play.d": "Ballspiele · Spaß +30",
+    "act.cuddle": "Kuscheln", "act.cuddle.d": "Widerrist kraulen · Bindung +10",
+    "act.sleep": "Für die Nacht fertig machen", "act.sleep.d": "Schlafen bis 06:00",
+    "act.vet": "Tierarzt rufen", "act.vet.d": "25 Münzen · Gesundheit +40",
+    "shop.heading": "Futterkammer", "shop.buy": "Kaufen · {n}",
+    "item.hay": "Heu", "item.oats": "Hafer", "item.carrot": "Karotten", "item.shavings": "Einstreu",
+    "diary.heading": "Stalltagebuch",
+    "ride.heading": "Gangart wählen",
+    "gait.walk": "Schritt", "gait.trot": "Trab", "gait.canter": "Galopp",
+    "gait.walk.d": "Ruhiger Takt · kleine Belohnung", "gait.trot.d": "Gleichmäßiger Takt · gute Belohnung", "gait.canter.d": "Schnell und knapp · große Belohnung",
+    "ride.hint": "Drück auf Hilfe, wenn die Markierung im grünen Bereich ist. Die Leertaste geht auch.",
+    "ride.aid": "Hilfe", "ride.count": "Tritt {n} von {total}", "ride.cancel": "Absteigen",
+    "ride.good": "Schöner Tritt!", "ride.miss": "Aus dem Takt",
+    "no.item": "Kein {item} mehr da. Kauf Nachschub in der Futterkammer.",
+    "no.full": "{name} ist satt und schnuppert nur daran.",
+    "no.waterFull": "Der Eimer ist schon voll.",
+    "no.clean": "{name} ist schon blitzsauber.",
+    "no.stallClean": "Die Box ist schon sauber.",
+    "no.tired": "{name} ist zu müde. Lass {name} ausruhen oder füttere Hafer.",
+    "no.sick": "{name} geht es nicht gut genug. Ruf zuerst den Tierarzt.",
+    "no.night": "Draußen ist es dunkel. Warte bis zum Morgen.",
+    "no.cuddled": "{name} hat gerade viel Zuneigung bekommen. Versuch es etwas später.",
+    "no.notNight": "Zu früh fürs Bett. Mach {name} ab 20:00 für die Nacht fertig.",
+    "no.coins": "Nicht genug Münzen.",
+    "no.vetHealthy": "{name} ist gesund. Kein Tierarzt nötig.",
+    "log.welcome": "{name} ist in Box eins eingezogen.",
+    "log.hay": "{name} mampft das Heu.",
+    "log.oats": "{name} verputzt den Hafer.",
+    "log.carrot": "{name} knuspert die Karotte und stupst nach mehr in deiner Tasche.",
+    "log.water": "{name} trinkt gierig aus dem frischen Eimer.",
+    "log.groom": "{name}s Fell glänzt nach dem Putzen.",
+    "log.muck": "Frisches Stroh in der Box. {name} wälzt sich sofort darin.",
+    "log.paddock": "{name} war zwei Stunden auf der Koppel, hat gegrast und ist galoppiert.",
+    "log.play": "{name} hat den Ball über die ganze Koppel gejagt.",
+    "log.cuddle": "{name} lehnt sich ins Kraulen und seufzt zufrieden.",
+    "log.sleep": "Du hast {name} für die Nacht fertig gemacht.",
+    "log.morning": "Tag {day} beginnt. Pflegenote {stars} von 5, {coins} Münzen verdient.",
+    "log.ride": "{gait}: {hits} von {total} guten Tritten, {coins} Münzen verdient.",
+    "log.rideStop": "Du bist früher abgestiegen.",
+    "log.vet": "Der Tierarzt hat {name} untersucht und Medizin dagelassen.",
+    "log.buy": "{item} gekauft.",
+    "log.away": "Während du weg warst, sind im Stall {h} Stunden vergangen.",
+    "warn.food": "{name} hat Hunger.", "warn.water": "{name} hat Durst.", "warn.energy": "{name} ist erschöpft.",
+    "warn.hygiene": "{name}s Fell ist schlammig und juckt.", "warn.stall": "Die Box muss ausgemistet werden.",
+    "warn.fun": "{name} langweilt sich.", "warn.fitness": "{name} braucht Bewegung.", "warn.bond": "{name} fühlt sich einsam.",
+    "warn.health": "{name} sieht krank aus. Ruf vielleicht den Tierarzt.",
+    "mood.food": "wiehert leise am leeren Heunetz.", "mood.water": "leckt am trockenen Eimer.",
+    "mood.energy": "döst und schont ein Hinterbein.", "mood.hygiene": "scheuert eine juckende, schlammige Schulter an der Tür.",
+    "mood.stall": "rümpft die Nase über das schmutzige Stroh.", "mood.fun": "scharrt mit dem Huf und sucht Beschäftigung.",
+    "mood.fitness": "ist unruhig und voller Tatendrang.", "mood.bond": "schaut über die Boxentür nach dir.",
+    "mood.sick": "steht still da, mit matten Augen.", "mood.sleep": "schläft, die Ohren zucken.",
+    "mood.ok": "schaut dich mit gespitzten Ohren an.", "mood.great": "strahlt und freut sich, dich zu sehen.",
+    scene: "{name} im Stall",
+  }
+};
+
+const COATS = {
+  bay:      { coat: "#8B4A2B", mane: "#24160F", points: "#24160F", blaze: true },
+  chestnut: { coat: "#A8562A", mane: "#7E3B19", points: "#A8562A", blaze: true },
+  grey:     { coat: "#CFCBC3", mane: "#EEEBE4", points: "#B7B2A9", blaze: false },
+  black:    { coat: "#2B2422", mane: "#120E0D", points: "#120E0D", blaze: false },
+  palomino: { coat: "#D9A954", mane: "#F3E7C6", points: "#D9A954", blaze: true },
+};
+const NEEDS = ["food", "water", "energy", "hygiene", "stall", "fun", "fitness", "bond"];
+const PRICES = { hay: 3, oats: 5, carrot: 2, shavings: 4 };
+const GAITS = {
+  walk:   { speed: 0.55, width: 0.30, coins: 1, fit: 1.5, energy: 8 },
+  trot:   { speed: 0.85, width: 0.22, coins: 2, fit: 2.5, energy: 15 },
+  canter: { speed: 1.2,  width: 0.15, coins: 3, fit: 3.5, energy: 22 },
+};
+const STORE_KEY = "ride-free-save-v1";
+const LANG_KEY = "ride-free-lang";
+
+let lang = "en";
+let state = null;
+let paused = false;
+let busyUntil = 0;
+let tempClass = "";
+let tempLoc = null;
+let ride = null;
+
+const $ = (id) => document.getElementById(id);
+const clamp = (v, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, v));
+
+function t(key, vars = {}) {
+  let s = I18N[lang][key] ?? I18N.en[key] ?? key;
+  return s.replace(/\{(\w+)\}/g, (_, k) => {
+    const v = vars[k];
+    if (v && typeof v === "object" && v.k) return t(v.k);
+    return v ?? "";
+  });
+}
+const nv = () => ({ name: state ? state.name : "" });
+
+function store(key, val) { try { localStorage.setItem(key, val); } catch (e) {} }
+function load(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+function forget(key) { try { localStorage.removeItem(key); } catch (e) {} }
+
+function newState(name, coat) {
+  return {
+    v: 1, name, coat, day: 1, minute: 7 * 60, coins: 40,
+    inv: { hay: 5, oats: 2, carrot: 3, shavings: 2 },
+    needs: { food: 70, water: 65, energy: 85, hygiene: 60, stall: 55, fun: 60, fitness: 50, bond: 40 },
+    health: 100, lastCuddle: -999, flags: {}, log: [], savedAt: Date.now(),
+  };
+}
+const absMin = () => (state.day - 1) * 1440 + state.minute;
+const isNight = (m = state.minute) => m < 360 || m >= 1320;
+const fmtTime = (m) => String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+function wellbeing() {
+  const n = state.needs;
+  return NEEDS.reduce((a, k) => a + n[k], 0) / NEEDS.length * 0.75 + state.health * 0.25;
+}
+
+function log(k, vars = {}, kind = "") {
+  state.log.unshift({ k, vars, kind, day: state.day, m: state.minute });
+  if (state.log.length > 60) state.log.length = 60;
+}
+
+/* Simulation: one call per game minute */
+function step() {
+  const n = state.needs, night = isNight();
+  const h = (v) => v / 60;
+  n.food -= h(night ? 3 : 6);
+  n.water -= h(night ? 4 : 8);
+  n.energy += night ? h(n.stall > 30 ? 12 : 6) : -h(3);
+  n.hygiene -= h(1.5);
+  n.stall -= h(night ? 3 : 2.5);
+  n.fun -= h(night ? 1 : 4);
+  n.fitness -= h(night ? 1 : 2);
+  n.bond -= h(night ? 0.2 : 0.8);
+  NEEDS.forEach((k) => n[k] = clamp(n[k]));
+
+  const vital = ["food", "water", "energy", "hygiene", "stall"];
+  const low = vital.filter((k) => n[k] < 20).length + (n.fun < 15 ? 0.5 : 0) + (n.bond < 15 ? 0.5 : 0);
+  if (low > 0) state.health -= h(3 * low);
+  else if (vital.every((k) => n[k] > 50)) state.health += h(1.5);
+  state.health = clamp(state.health);
+
+  NEEDS.forEach((k) => {
+    if (n[k] < 25 && !state.flags[k]) { state.flags[k] = true; log("warn." + k, nv(), "warn"); }
+    if (n[k] > 40) state.flags[k] = false;
+  });
+  if (state.health < 35 && !state.flags.health) { state.flags.health = true; log("warn.health", nv(), "warn"); }
+  if (state.health > 50) state.flags.health = false;
+
+  state.minute++;
+  if (state.minute >= 1440) { state.minute = 0; state.day++; }
+  if (state.minute === 360) morning();
+}
+function advance(mins) { for (let i = 0; i < mins; i++) step(); }
+
+function morning() {
+  const stars = clamp(Math.round(wellbeing() / 20), 1, 5);
+  const coins = stars * 5;
+  state.coins += coins;
+  log("log.morning", { day: state.day, stars, coins }, "gold");
+}
+
+/* Actions */
+const ACTIONS = [
+  { id: "hay", run() {
+      if (state.inv.hay < 1) return fail("no.item", { item: { k: "item.hay" } });
+      if (state.needs.food > 92) return fail("no.full", nv());
+      state.inv.hay--; bump({ food: 30 }); return done("log.hay", 20, "eat");
+  } },
+  { id: "water", run() {
+      if (state.needs.water > 95) return fail("no.waterFull");
+      bump({ water: 100 }); return done("log.water", 5, "drink");
+  } },
+  { id: "oats", run() {
+      if (state.inv.oats < 1) return fail("no.item", { item: { k: "item.oats" } });
+      if (state.needs.food > 92) return fail("no.full", nv());
+      state.inv.oats--; bump({ food: 20, energy: 15 }); return done("log.oats", 10, "eat");
+  } },
+  { id: "carrot", run() {
+      if (state.inv.carrot < 1) return fail("no.item", { item: { k: "item.carrot" } });
+      state.inv.carrot--; bump({ food: 4, bond: 8, fun: 4 }); hearts(3); return done("log.carrot", 2, "happy");
+  } },
+  { id: "groom", run() {
+      if (state.needs.hygiene > 95) return fail("no.clean", nv());
+      bump({ hygiene: 40, bond: 5 }); brush(); return done("log.groom", 30, "happy");
+  } },
+  { id: "muck", run() {
+      if (state.needs.stall > 95) return fail("no.stallClean");
+      if (state.inv.shavings < 1) return fail("no.item", { item: { k: "item.shavings" } });
+      state.inv.shavings--; bump({ stall: 100, fun: 3, hygiene: -5 }); return done("log.muck", 25, "happy");
+  } },
+  { id: "paddock", run() {
+      if (state.minute >= 1260 || state.minute < 360) return fail("no.night");
+      if (state.health < 30) return fail("no.sick", nv());
+      bump({ fitness: 25, fun: 20, energy: -10, hygiene: -12, food: 8 });
+      return done("log.paddock", 120, "walk", "paddock");
+  } },
+  { id: "ride", ride: true, run() {
+      if (state.minute >= 1260 || state.minute < 360) return fail("no.night");
+      if (state.health < 40) return fail("no.sick", nv());
+      if (state.needs.energy < 25) return fail("no.tired", nv());
+      openRide();
+  } },
+  { id: "play", run() {
+      if (state.minute >= 1260 || state.minute < 360) return fail("no.night");
+      if (state.needs.energy < 15) return fail("no.tired", nv());
+      bump({ fun: 30, bond: 5, energy: -8, fitness: 6 }); return done("log.play", 30, "trot", "paddock");
+  } },
+  { id: "cuddle", run() {
+      if (absMin() - state.lastCuddle < 60) return fail("no.cuddled", nv());
+      state.lastCuddle = absMin(); bump({ bond: 10, fun: 5 }); hearts(5); return done("log.cuddle", 10, "happy");
+  } },
+  { id: "sleep", run() {
+      const m = state.minute;
+      if (!(m >= 1200 || m < 360)) return fail("no.notNight", nv());
+      const mins = m >= 1200 ? 1440 - m + 360 : 360 - m;
+      log("log.sleep", nv()); advance(mins); return done(null, 0, "");
+  } },
+  { id: "vet", run() {
+      if (state.health > 75) return fail("no.vetHealthy", nv());
+      if (state.coins < 25) return fail("no.coins");
+      state.coins -= 25; state.health = clamp(state.health + 40); return done("log.vet", 45, "");
+  } },
+];
+
+function bump(d) { for (const k in d) state.needs[k] = clamp(state.needs[k] + d[k]); }
+function fail(k, vars) { toast(t(k, vars)); return false; }
+function done(k, mins, cls, loc) {
+  if (k) log(k, nv());
+  if (mins) advance(mins);
+  play(cls, loc);
+  save(); render();
+  return true;
+}
+function play(cls, loc) {
+  tempClass = cls || ""; tempLoc = loc || null;
+  busyUntil = Date.now() + (loc ? 3200 : 1800);
+  renderScene();
+  setTimeout(() => { if (Date.now() >= busyUntil) { tempClass = ""; tempLoc = null; renderScene(); } }, (loc ? 3200 : 1800) + 20);
+}
+
+function buy(item) {
+  if (state.coins < PRICES[item]) return toast(t("no.coins"));
+  state.coins -= PRICES[item]; state.inv[item]++;
+  log("log.buy", { item: { k: "item." + item } });
+  save(); render();
+}
+
+/* Riding */
+function openRide() {
+  ride = { phase: "choose" };
+  $("careBlock").hidden = true; $("ridePanel").hidden = false;
+  $("gaitChoice").hidden = false; $("rideRun").hidden = true;
+  tempLoc = "arena"; tempClass = ""; renderScene(); renderGaits();
+}
+function startRide(g) {
+  const cfg = GAITS[g];
+  ride = { phase: "run", gait: g, cfg, stride: 0, total: 8, hits: 0, results: [], pos: 0, dir: 1, wait: false, last: performance.now() };
+  newZone();
+  $("gaitChoice").hidden = true; $("rideRun").hidden = false;
+  $("rideTitle").textContent = t("gait." + g);
+  $("rideMsg").textContent = ""; $("rideMsg").className = "ride-msg";
+  tempClass = g; renderScene(); renderRide();
+  requestAnimationFrame(rideLoop);
+  $("aidBtn").focus();
+}
+function newZone() {
+  const w = ride.cfg.width;
+  ride.c = w / 2 + 0.05 + Math.random() * (0.9 - w);
+}
+function rideLoop(now) {
+  if (!ride || ride.phase !== "run") return;
+  const dt = Math.min(0.05, (now - ride.last) / 1000); ride.last = now;
+  if (!ride.wait) {
+    ride.pos += ride.dir * ride.cfg.speed * dt;
+    if (ride.pos > 1) { ride.pos = 1; ride.dir = -1; }
+    if (ride.pos < 0) { ride.pos = 0; ride.dir = 1; }
+  }
+  $("marker").style.left = (ride.pos * 100) + "%";
+  requestAnimationFrame(rideLoop);
+}
+function aid() {
+  if (!ride || ride.phase !== "run" || ride.wait) return;
+  const hit = Math.abs(ride.pos - ride.c) <= ride.cfg.width / 2;
+  ride.results.push(hit); if (hit) ride.hits++;
+  const msg = $("rideMsg");
+  msg.textContent = t(hit ? "ride.good" : "ride.miss");
+  msg.className = "ride-msg " + (hit ? "good" : "bad");
+  ride.wait = true; renderRide();
+  setTimeout(() => {
+    if (!ride || ride.phase !== "run") return;
+    ride.stride++; ride.wait = false;
+    if (ride.stride >= ride.total) return finishRide();
+    newZone(); renderRide();
+  }, 500);
+}
+function finishRide() {
+  const { cfg, hits, total, gait } = ride;
+  const coins = hits * cfg.coins + (hits === total ? 4 : 0);
+  state.coins += coins;
+  bump({ fitness: hits * cfg.fit, bond: hits * 0.8, fun: 10, energy: -cfg.energy, hygiene: -12, water: -10 });
+  log("log.ride", { gait: { k: "gait." + gait }, hits, total, coins }, hits >= 6 ? "gold" : "");
+  if (hits >= 6) hearts(4);
+  advance(45);
+  toast(t("log.ride", { gait: { k: "gait." + gait }, hits, total, coins }), true);
+  closeRide();
+}
+function closeRide(early) {
+  if (early && ride && ride.phase === "run") { log("log.rideStop"); advance(15); }
+  ride = null; tempLoc = null; tempClass = "";
+  $("careBlock").hidden = false; $("ridePanel").hidden = true;
+  save(); render();
+}
+
+/* Visual effects */
+function hearts(n) {
+  const fx = $("fx");
+  for (let i = 0; i < n; i++) {
+    const el = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    el.setAttribute("x", 400 + Math.random() * 90); el.setAttribute("y", 110 + Math.random() * 40);
+    el.setAttribute("font-size", 18 + Math.random() * 10); el.setAttribute("fill", "#E2506B");
+    el.setAttribute("class", "heart"); el.style.animationDelay = (i * 0.18) + "s";
+    el.textContent = "♥"; fx.appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+}
+function brush() {
+  const fx = $("fx");
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "brushfx");
+  g.innerHTML = '<rect x="285" y="160" width="44" height="18" rx="6" fill="#8A5A35"/><rect x="288" y="176" width="38" height="8" rx="2" fill="#3A2A1E"/>';
+  fx.appendChild(g); setTimeout(() => g.remove(), 1700);
+}
+let toastTimer;
+function toast(msg, good) {
+  const el = $("toast"); el.textContent = msg;
+  el.className = "toast show" + (good ? " good" : "");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.className = "toast", 2800);
+}
+
+/* Rendering */
+function applyStatic() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-i18n]").forEach((el) => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-lang]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+  $("pauseBtn").textContent = t(paused ? "hud.resume" : "hud.pause");
+  renderCoats();
+  if (state) render();
+  if (ride) { ride.phase === "choose" ? renderGaits() : ($("rideTitle").textContent = t("gait." + ride.gait), renderRide()); }
+}
+
+let pickedCoat = "bay";
+function renderCoats() {
+  $("coatPicker").innerHTML = Object.keys(COATS).map((c) =>
+    `<button type="button" class="coat" data-coat="${c}" aria-pressed="${c === pickedCoat}"><i style="background:${COATS[c].coat}"></i>${t("coat." + c)}</button>`).join("");
+}
+function paintHorse(coat) {
+  const c = COATS[coat] || COATS.bay;
+  const h = $("horse");
+  h.style.setProperty("--coat", c.coat); h.style.setProperty("--mane", c.mane); h.style.setProperty("--points", c.points);
+  $("blaze").style.display = c.blaze ? "" : "none";
+}
+
+function renderScene() {
+  const loc = tempLoc || "stall";
+  $("locStall").hidden = loc !== "stall";
+  $("locPaddock").hidden = loc !== "paddock";
+  $("locArena").hidden = loc !== "arena";
+  $("ball").hidden = !(loc === "paddock" && tempClass === "trot");
+  $("locLabel").textContent = t("loc." + loc);
+  if (!state) return;
+  const n = state.needs, m = state.minute;
+  paintHorse(state.coat);
+  $("plateText").textContent = state.name.toUpperCase();
+  $("sceneTitle").textContent = t("scene", nv());
+  $("water").setAttribute("y", 241 + 52 * (1 - n.water / 100));
+  $("hayFill").style.opacity = String(0.25 + 0.75 * n.food / 100);
+  $("dirt").style.opacity = String(Math.max(0, (70 - n.stall) / 70));
+  $("straw").setAttribute("fill", n.stall > 50 ? "#D3AC50" : "#B89440");
+  $("grime").style.opacity = String(Math.max(0, (50 - n.hygiene) / 50) * 0.9);
+
+  // daylight: 0 at noon, deepest between 22:00 and 05:00
+  let dark;
+  if (m >= 1320 || m < 300) dark = 1;
+  else if (m < 420) dark = 1 - (m - 300) / 120;
+  else if (m >= 1140) dark = (m - 1140) / 180;
+  else dark = 0;
+  $("night").setAttribute("opacity", (dark * 0.5).toFixed(2));
+  $("sky").setAttribute("fill", dark > 0.6 ? "#1C2B52" : dark > 0.2 ? "#E9A36A" : "#9FD0EA");
+  $("sun").setAttribute("opacity", dark > 0.6 ? 0 : 1);
+  $("moon").setAttribute("opacity", dark > 0.6 ? 1 : 0);
+
+  let cls = tempClass;
+  if (!cls) {
+    if (isNight() && loc === "stall") cls = "sleep";
+    else if (state.health < 40 || wellbeing() < 35) cls = "sad";
+  }
+  $("horse").setAttribute("class", cls);
+  renderMood(cls);
+}
+
+function renderMood(cls) {
+  const n = state.needs;
+  let key;
+  if (cls === "sleep") key = "mood.sleep";
+  else if (state.health < 35) key = "mood.sick";
+  else {
+    const lowest = NEEDS.reduce((a, k) => n[k] < n[a] ? k : a, NEEDS[0]);
+    if (n[lowest] < 35) key = "mood." + lowest;
+    else key = wellbeing() > 75 ? "mood.great" : "mood.ok";
+  }
+  $("mood").innerHTML = "";
+  const b = document.createElement("b"); b.textContent = state.name;
+  $("mood").append(b, document.createTextNode(t(key)));
+}
+
+function barClass(v) { return v < 25 ? "bar bad" : v < 50 ? "bar warn" : "bar"; }
+
+function render() {
+  if (!state) return;
+  $("clock").textContent = t("hud.day", { n: state.day }) + " · " + fmtTime(state.minute);
+  $("coins").textContent = state.coins;
+  $("namePlate").textContent = state.name;
+  $("coatLabel").textContent = t("coat." + state.coat);
+  $("healthBar").className = barClass(state.health);
+  $("healthBar").firstElementChild.style.width = state.health + "%";
+  $("healthVal").textContent = Math.round(state.health);
+
+  $("needs").innerHTML = NEEDS.map((k) => {
+    const v = state.needs[k];
+    return `<div class="need${v < 25 ? " bad" : ""}"><span>${t("need." + k)}</span><div class="${barClass(v)}" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(v)}" aria-label="${t("need." + k)}"><i style="width:${v}%"></i></div><span class="v">${Math.round(v)}</span></div>`;
+  }).join("");
+
+  const night = isNight();
+  const lateEnough = state.minute >= 1200 || state.minute < 360;
+  $("actions").innerHTML = ACTIONS.map((a) => {
+    if (a.id === "sleep" && !lateEnough) return "";
+    if (a.id === "vet" && state.health > 75) return "";
+    const alert = (a.id === "hay" && state.needs.food < 25) || (a.id === "water" && state.needs.water < 25) ||
+      (a.id === "muck" && state.needs.stall < 25) || (a.id === "groom" && state.needs.hygiene < 25) || a.id === "vet";
+    const out = night && ["paddock", "ride", "play"].includes(a.id);
+    return `<button type="button" class="act${a.ride ? " ride" : ""}${alert ? " alert" : ""}" data-act="${a.id}"${out ? " disabled" : ""}><strong>${t("act." + a.id)}</strong><small>${t("act." + a.id + ".d")}</small></button>`;
+  }).join("");
+
+  $("shop").innerHTML = Object.keys(PRICES).map((k) =>
+    `<div class="item"><span>${t("item." + k)}</span><span class="qty"><b>${state.inv[k]}</b></span><button type="button" class="buy" data-buy="${k}"${state.coins < PRICES[k] ? " disabled" : ""}>${t("shop.buy", { n: PRICES[k] })}</button></div>`).join("");
+
+  const ul = $("diary"); ul.innerHTML = "";
+  state.log.slice(0, 30).forEach((e) => {
+    const li = document.createElement("li"); if (e.kind) li.className = e.kind;
+    const tm = document.createElement("time"); tm.textContent = t("hud.day", { n: e.day }) + " · " + fmtTime(e.m);
+    const sp = document.createElement("span"); sp.textContent = t(e.k, e.vars);
+    li.append(tm, sp); ul.appendChild(li);
+  });
+  renderScene();
+}
+
+function renderGaits() {
+  $("gaits").innerHTML = Object.keys(GAITS).map((g) =>
+    `<button type="button" class="act" data-gait="${g}"><strong>${t("gait." + g)}</strong><small>${t("gait." + g + ".d")}</small></button>`).join("");
+}
+function renderRide() {
+  $("rideCount").textContent = t("ride.count", { n: Math.min(ride.stride + 1, ride.total), total: ride.total });
+  $("zone").style.left = ((ride.c - ride.cfg.width / 2) * 100) + "%";
+  $("zone").style.width = (ride.cfg.width * 100) + "%";
+  $("strides").innerHTML = Array.from({ length: ride.total }, (_, i) =>
+    `<i class="${i < ride.results.length ? (ride.results[i] ? "hit" : "miss") : ""}"></i>`).join("");
+}
+
+/* Persistence */
+function save() {
+  if (!state) return;
+  state.savedAt = Date.now();
+  store(STORE_KEY, JSON.stringify(state));
+}
+
+/* Wiring */
+function showGame() {
+  $("setup").hidden = true; $("game").hidden = false; $("hud").hidden = false;
+  render();
+}
+function showSetup() {
+  $("game").hidden = true; $("hud").hidden = true; $("setup").hidden = false;
+  // show the scene as the preview on the setup screen
+  $("previewSlot").appendChild($("sceneWrap"));
+  state = null; tempLoc = null;
+  paintHorse(pickedCoat);
+  $("plateText").textContent = ($("nameInput").value.trim() || "Nutmeg").toUpperCase();
+  $("mood").textContent = ""; $("horse").setAttribute("class", "happy");
+  renderScene();
+}
+
+document.addEventListener("click", (e) => {
+  const langBtn = e.target.closest("[data-lang]");
+  if (langBtn) { lang = langBtn.dataset.lang; store(LANG_KEY, lang); applyStatic(); if (!state) showSetup(); return; }
+  const coat = e.target.closest("[data-coat]");
+  if (coat) { pickedCoat = coat.dataset.coat; renderCoats(); paintHorse(pickedCoat); return; }
+  const act = e.target.closest("[data-act]");
+  if (act && state) { ACTIONS.find((a) => a.id === act.dataset.act).run(); return; }
+  const b = e.target.closest("[data-buy]");
+  if (b && state) { buy(b.dataset.buy); return; }
+  const g = e.target.closest("[data-gait]");
+  if (g && ride) { startRide(g.dataset.gait); return; }
+});
+$("nameInput").addEventListener("input", () => { $("plateText").textContent = ($("nameInput").value.trim() || "Nutmeg").toUpperCase(); });
+$("setupForm").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const name = $("nameInput").value.trim().slice(0, 16) || "Nutmeg";
+  state = newState(name, pickedCoat);
+  log("log.welcome", nv());
+  $("careBlock").before($("sceneWrap"));
+  save(); showGame();
+});
+$("aidBtn").addEventListener("click", aid);
+$("rideCancel1").addEventListener("click", () => closeRide(false));
+$("rideCancel2").addEventListener("click", () => closeRide(true));
+document.addEventListener("keydown", (e) => {
+  if (e.code === "Space" && ride && ride.phase === "run") { e.preventDefault(); aid(); }
+});
+$("pauseBtn").addEventListener("click", () => { paused = !paused; $("pauseBtn").textContent = t(paused ? "hud.resume" : "hud.pause"); });
+let resetArmed = false;
+$("resetBtn").addEventListener("click", () => {
+  const btn = $("resetBtn");
+  if (!resetArmed) {
+    resetArmed = true; btn.textContent = t("hud.confirm"); btn.classList.add("danger");
+    setTimeout(() => { resetArmed = false; btn.textContent = t("hud.reset"); btn.classList.remove("danger"); }, 3000);
+    return;
+  }
+  resetArmed = false; btn.classList.remove("danger"); btn.textContent = t("hud.reset");
+  if (ride) closeRide(false);
+  forget(STORE_KEY); showSetup();
+});
+
+// one real second = one game minute
+setInterval(() => {
+  if (!state || paused || ride || document.hidden) return;
+  advance(1);
+  if (state.minute % 5 === 0) save();
+  render();
+}, 1000);
+
+function start(snap) {
+  const savedLang = load(LANG_KEY);
+  lang = savedLang === "de" ? "de" : "en";
+  let saved = snap && snap.state ? snap.state : null;
+  if (!saved) { try { saved = JSON.parse(load(STORE_KEY) || "null"); } catch (e) { saved = null; } }
+  applyStatic();
+  if (saved && saved.v === 1) {
+    state = saved; state.flags = state.flags || {};
+    $("careBlock").before($("sceneWrap"));
+    const away = Math.min(360, Math.floor((Date.now() - (state.savedAt || Date.now())) / 1000));
+    if (away >= 60 && !(snap && snap.state)) { advance(away); log("log.away", { h: Math.round(away / 60) }); }
+    save(); showGame();
+  } else {
+    showSetup();
+  }
+}
+window.claude?.hot?.snapshot?.(() => ({ state }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+})();
+</script>
